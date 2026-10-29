@@ -1,0 +1,33 @@
+# Local recording stack: LiveKit + Redis + Egress + MinIO (S3). Start with:
+#   docker compose -f docker/docker-compose.recording.yml up -d
+# Create the bucket once: MinIO console http://localhost:9001 (minioadmin / minioadmin) → Buckets → `recordings`.
+# Site env:  LIVEKIT_URL=ws://localhost:7880  LIVEKIT_API_KEY=devkey  LIVEKIT_API_SECRET=secret-secret-secret-secret-secret
+#            LIVEKIT_RECORDING_BUCKET=recordings  LIVEKIT_RECORDING_REGION=us-east-1  LIVEKIT_RECORDING_ENDPOINT=http://localhost:9000
+#            LIVEKIT_RECORDING_ACCESS_KEY=minioadmin  LIVEKIT_RECORDING_SECRET=minioadmin
+# Egress reaches MinIO from inside Docker, so for Egress the endpoint is http://minio:9000: set LIVEKIT_RECORDING_ENDPOINT to
+# that and add `127.0.0.1 minio` to /etc/hosts so signed playback links open on the host too.
+# Browser + Egress both have to reach LiveKit's media ports, so run it with an address both can use: your machine's LAN IP, not 127.0.0.1
+# (Egress runs inside Docker, where 127.0.0.1 is itself):   LIVEKIT_NODE_IP=$(ipconfig getifaddr en0) docker compose -f docker/docker-compose.recording.yml up -d
+services:
+  redis:
+    image: redis:7-alpine
+  livekit:
+    image: livekit/livekit-server:latest
+    command: --config /etc/livekit.yaml --node-ip ${LIVEKIT_NODE_IP:-127.0.0.1}
+    volumes: ['./livekit.yaml:/etc/livekit.yaml:ro']
+    depends_on: [redis]
+    ports: ['${LIVEKIT_PORT:-7880}:7880', '${LIVEKIT_TCP_PORT:-7881}:7881', '50000-50100:50000-50100/udp']
+    extra_hosts: ['host.docker.internal:host-gateway']
+  egress:
+    image: livekit/egress:latest
+    environment:
+      EGRESS_CONFIG_FILE: /etc/egress.yaml
+    volumes: ['./egress.yaml:/etc/egress.yaml:ro']
+    cap_add: [SYS_ADMIN]
+    shm_size: 1gb
+    depends_on: [redis, livekit]
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: server /data --console-address ":9001"
+    environment: { MINIO_ROOT_USER: minioadmin, MINIO_ROOT_PASSWORD: minioadmin }
+    ports: ['9000:9000', '9001:9001']

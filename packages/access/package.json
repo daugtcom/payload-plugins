@@ -1,0 +1,55 @@
+{
+  "name": "@daugtcom/payload-access",
+  "version": "0.1.0",
+  "description": "Entitlements, series access, policies and engagement for Payload",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./rules": "./src/rules/index.ts",
+    "./recipes/course-policy": "./recipes/course-policy.ts",
+    "./recipes/course-policy-payload": "./recipes/course-policy-payload.ts",
+    "./ui": "./src/ui/index.ts",
+    "./mail": "./src/mail/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "payload": "3.91.0",
+    "next": ">=16.3.3 <17",
+    "react": "^19",
+    "lucide-react": ">=1.0.0",
+    "@payloadcms/richtext-lexical": "3.91.0"
+  },
+  "devDependencies": {
+    "payload": "3.91.0",
+    "@payloadcms/db-postgres": "3.91.0",
+    "@payloadcms/richtext-lexical": "3.91.0",
+    "pg": "^8.16.0",
+    "@types/pg": "^8.15.0",
+    "sharp": "0.35.4",
+    "next": "16.3.3",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "lucide-react": "^1.59.0"
+  },
+  "peerDependenciesMeta": {
+    "next": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "pdfjs-dist": "^6.4.299",
+    "@daugtcom/payload-mail": "^0.1.0",
+    "@daugtcom/payload-media": "^0.1.0"
+  }
+}

@@ -1,0 +1,23 @@
+/** The calendar's classes (react-day-picker v9 `classNames` keys), in the theme tokens of the site. A site passes `classNames` to override any of them. */
+export const calendarClassNames: Record<string, string> = {
+  root: 'w-full',
+  months: 'relative',
+  month: 'w-full',
+  month_caption: 'flex h-10 items-center justify-center font-display text-xl text-primary-950',
+  caption_label: '',
+  nav: 'absolute inset-x-0 top-0 flex items-center justify-between',
+  button_previous: 'inline-flex h-10 w-10 items-center justify-center rounded-full text-neutral-700 transition-colors hover:bg-primary-50 disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent',
+  button_next: 'inline-flex h-10 w-10 items-center justify-center rounded-full text-neutral-700 transition-colors hover:bg-primary-50 disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent',
+  chevron: 'h-4 w-4 fill-current',
+  month_grid: 'mt-3 w-full border-collapse',
+  weekdays: '',
+  weekday: 'pb-2 text-center text-xs font-medium uppercase tracking-wider text-neutral-500',
+  week: '',
+  day: 'p-0.5 text-center',
+  day_button: 'mx-auto flex h-10 w-10 items-center justify-center rounded-full text-[0.95rem] font-medium text-neutral-900 transition-colors hover:bg-primary-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600',
+  selected: '[&>button]:bg-primary-700 [&>button]:text-white [&>button:hover]:bg-primary-700',
+  today: '[&>button]:text-primary-700 [&>button]:underline [&>button]:decoration-primary-300 [&>button]:underline-offset-4',
+  outside: 'opacity-0 pointer-events-none',
+  disabled: '[&>button]:cursor-default [&>button]:font-normal [&>button]:text-neutral-300 [&>button]:hover:bg-transparent',
+  hidden: 'invisible',
+}

@@ -1,0 +1,59 @@
+{
+  "name": "@daugtcom/payload-booking",
+  "version": "0.1.0",
+  "description": "Appointment booking for Payload shops: bookable products, availability, slot holds, calendar busy time",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./ui": "./src/ui/index.ts",
+    "./admin": "./src/admin/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@daugtcom/payload-commerce": "^0.1.0",
+    "lucide-react": ">=1.0.0",
+    "next": ">=16.3.3 <17",
+    "payload": "3.91.0",
+    "react": "^19"
+  },
+  "devDependencies": {
+    "@daugtcom/payload-access": "^0.1.0",
+    "@daugtcom/payload-commerce": "^0.1.0",
+    "@payloadcms/db-postgres": "3.91.0",
+    "@payloadcms/plugin-ecommerce": "3.91.0",
+    "@payloadcms/richtext-lexical": "3.91.0",
+    "@types/luxon": "^3.7.6",
+    "@types/pg": "^8.15.0",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "lucide-react": "^1.59.0",
+    "next": "16.3.3",
+    "payload": "3.91.0",
+    "pg": "^8.16.0",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "sharp": "0.35.4",
+    "stripe": "^23.0.0"
+  },
+  "peerDependenciesMeta": {
+    "next": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "date-fns": "^4.1.0",
+    "ical.js": "^2.2.1",
+    "luxon": "^3.7.2",
+    "react-day-picker": "^9.14.0",
+    "@daugtcom/payload-mail": "^0.1.0"
+  }
+}

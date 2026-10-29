@@ -1,0 +1,21 @@
+# Scratch database for the dev app and import rehearsals.
+# Own port (54330) and volume so it never touches oehfhs (5432) or trailsense (54329).
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: plugins
+      POSTGRES_USER: plugins
+      POSTGRES_PASSWORD: plugins
+    ports:
+      - "127.0.0.1:54330:5432"
+    volumes:
+      - plugins_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U plugins -d plugins"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+volumes:
+  plugins_pg:

@@ -1,0 +1,9 @@
+{
+  "name": "@daugtcom/payload-admin-labels",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "test": "vitest run tests" },
+  "peerDependencies": { "payload": "3.91.0" }
+}

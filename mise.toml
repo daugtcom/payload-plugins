@@ -1,0 +1,22 @@
+[tools]
+node = "24.18.1"
+
+[tasks.setup]
+run = "npm install"
+description = "Install dependencies"
+
+[tasks.'db:up']
+run = "docker compose -f compose.dev.yaml up -d --wait"
+description = "Start the scratch PostgreSQL (port 54330)"
+
+[tasks.'db:down']
+run = "docker compose -f compose.dev.yaml down"
+description = "Stop PostgreSQL, keep data"
+
+[tasks.test]
+run = "npm run test"
+description = "Run all package tests"
+
+[tasks.check]
+run = "npm run typecheck"
+description = "Type check all packages"

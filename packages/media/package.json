@@ -1,0 +1,10 @@
+{
+  "name": "@daugtcom/payload-media",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": ["*.css"],
+  "exports": { ".": "./src/PlyrPlayer.tsx" },
+  "dependencies": { "plyr": "^3.8.5" },
+  "peerDependencies": { "react": "^19" }
+}

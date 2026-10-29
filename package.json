@@ -1,0 +1,37 @@
+{
+  "name": "payload-plugins",
+  "private": true,
+  "version": "0.0.0",
+  "description": "daugt Payload plugins: access, commerce, passwordless",
+  "packageManager": "npm@11.16.0",
+  "workspaces": [
+    "packages/*",
+    "dev",
+    "clients/margarethabrunner.com",
+    "clients/hilde-gerg.de",
+    "clients/tools/*"
+  ],
+  "type": "module",
+  "scripts": {
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "postinstall": "node scripts/link-client-dependencies.mjs"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "devDependencies": {
+    "@payloadcms/plugin-seo": "3.91.0",
+    "@types/node": "^22.19.9",
+    "tsx": "^4.22.4",
+    "typescript": "^5.7.3",
+    "vitest": "4.0.18"
+  },
+  "allowScripts": {
+    "esbuild": true,
+    "sharp": true,
+    "unrs-resolver": true,
+    "plyr": false,
+    "fsevents": false
+  }
+}

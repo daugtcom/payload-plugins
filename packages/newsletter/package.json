@@ -1,0 +1,53 @@
+{
+  "name": "@daugtcom/payload-newsletter",
+  "version": "0.1.0",
+  "description": "Newsletter for Payload: double opt-in signup, block editor rendered with react-email, batched sending, CSV import, Resend webhooks",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./ui": "./src/ui/index.ts",
+    "./admin": "./src/admin/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@payloadcms/richtext-lexical": "3.91.0",
+    "@payloadcms/ui": "3.91.0",
+    "next": ">=16.3.3 <17",
+    "payload": "3.91.0",
+    "react": "^19",
+    "lucide-react": ">=1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "next": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@payloadcms/db-postgres": "3.91.0",
+    "@payloadcms/richtext-lexical": "3.91.0",
+    "@payloadcms/ui": "3.91.0",
+    "@types/pg": "^8.15.0",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "next": "16.3.3",
+    "payload": "3.91.0",
+    "pg": "^8.16.0",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "sharp": "0.35.4",
+    "lucide-react": "^1.59.0"
+  },
+  "dependencies": {
+    "@react-email/components": "^1.0.12",
+    "@daugtcom/payload-mail": "^0.1.0"
+  }
+}

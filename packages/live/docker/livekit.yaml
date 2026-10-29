@@ -1,0 +1,17 @@
+# LiveKit server with Egress support (recording). Used by docker-compose.recording.yml; for production copy the keys, webhook and
+# node_ip/use_external_ip settings to your own server, see the README.
+port: 7880
+rtc:
+  tcp_port: 7881
+  port_range_start: 50000
+  port_range_end: 50100
+  use_external_ip: false
+redis:
+  address: redis:6379
+keys:
+  devkey: secret-secret-secret-secret-secret
+# egress progress and "first person joined" reach the site here (signed with the API secret)
+webhook:
+  api_key: devkey
+  urls:
+    - http://host.docker.internal:3211/api/live/webhook

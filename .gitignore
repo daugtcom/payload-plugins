@@ -1,0 +1,15 @@
+node_modules
+dist
+.next
+coverage
+*.tsbuildinfo
+.DS_Store
+.env
+.env.local
+.env.*.local
+# real customer data, never commit
+tools/import-daugt-saas/fixtures/
+tools/import-daugt-saas/out/
+
+# Optional local checkout of client sites; never publish customer data here.
+/clients
