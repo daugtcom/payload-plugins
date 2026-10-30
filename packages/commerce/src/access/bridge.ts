@@ -43,7 +43,8 @@ async function customerOf(payload: Payload, order: OrderDoc, usersSlug: string, 
 }
 
 async function rulesOf(payload: Payload, productsSlug: string, productId: Id, req?: PayloadRequest): Promise<RuleDoc[]> {
-  const product = (await payload.findByID({ collection: productsSlug as never, id: productId, depth: 0, overrideAccess: true, req }).catch(() => null)) as { commerce?: { accessItems?: RuleDoc[] } } | null
+  const product = (await payload.findByID({ collection: productsSlug as never, id: productId, depth: 0, overrideAccess: true, req })) as { commerce?: { accessItems?: RuleDoc[] } } | null
+  if (!product) throw new Error(`Purchased product ${productId} could not be loaded`)
   return (product?.commerce?.accessItems ?? []).filter((r) => r.enabled !== false)
 }
 
@@ -54,8 +55,8 @@ export async function revokeForOrder(access: AccessService, payload: Payload, cf
 }
 
 /**
- * Entitlements follow the order: on every save, drop what the order granted and regrant it if the order is paid.
- * Orders stay editable by staff and the result always matches the order's current state.
+ * Purchased entitlements are a snapshot: later edits to product rules must not
+ * rewrite them when an order or subscription event is saved again.
  * Skipped when `req.context.skipEntitlementSync` is set (the importer copies entitlements verbatim).
  */
 export async function syncOrderEntitlements(order: OrderDoc, req: PayloadRequest, cfg: BridgeConfig): Promise<void> {
@@ -63,8 +64,12 @@ export async function syncOrderEntitlements(order: OrderDoc, req: PayloadRequest
   const payload = req.payload
   const access = getAccess(payload)
 
-  await revokeForOrder(access, payload, cfg, order.id, req)
-  if (order.paymentStatus !== 'paid') return
+  if (order.paymentStatus !== 'paid') {
+    await revokeForOrder(access, payload, cfg, order.id, req)
+    return
+  }
+  const existing = await payload.find({ collection: cfg.entitlementsSlug as never, where: { order: { equals: order.id } }, limit: 1, depth: 0, overrideAccess: true, req })
+  if (existing.docs.length) return
 
   const userId = await customerOf(payload, order, cfg.usersSlug, req)
   if (userId === null) return
@@ -72,7 +77,8 @@ export async function syncOrderEntitlements(order: OrderDoc, req: PayloadRequest
   const paidAt = order.paidAt ? new Date(order.paidAt) : null
   for (const item of order.items ?? []) {
     if (!item.product) continue
-    for (const rule of await rulesOf(payload, cfg.productsSlug, idOf(item.product), req)) {
+    const productId = idOf(item.product)
+    for (const rule of await rulesOf(payload, cfg.productsSlug, productId, req)) {
       const w = computeGrantWindow(toRule(rule), paidAt)
       await access.grant({
         user: userId,
@@ -81,7 +87,7 @@ export async function syncOrderEntitlements(order: OrderDoc, req: PayloadRequest
         end: w.end,
         keepAccessibleAfterExpiry: w.keepAccessibleAfterExpiry,
         keepUnlockedWhenActive: w.keepUnlockedWhenActive,
-        data: { order: order.id },
+        data: { order: order.id, purchasedProduct: productId },
         req,
       })
     }
@@ -90,25 +96,34 @@ export async function syncOrderEntitlements(order: OrderDoc, req: PayloadRequest
 
 /** A subscription ended (cancelled, finished): end the windows that its order granted for this product. */
 export async function endSubscriptionAccess(payload: Payload, cfg: BridgeConfig, o: { orderId: Id; productId: Id; endsAt: Date; req?: PayloadRequest }): Promise<void> {
+  const direct = await payload.find({
+    collection: cfg.entitlementsSlug as never,
+    where: { and: [{ order: { equals: o.orderId } }, { purchasedProduct: { equals: o.productId } }] },
+    limit: 0, pagination: false, depth: 0, overrideAccess: true, req: o.req,
+  })
+  const grants = new Map<Id, { id: Id; validityStart?: string | null }>()
+  for (const e of direct.docs as unknown as { id: Id; validityStart?: string | null }[]) grants.set(e.id, e)
+  // Older entitlements have no product provenance; match those by their current rule.
   const rules = await rulesOf(payload, cfg.productsSlug, o.productId, o.req)
   for (const rule of rules) {
     const target = { relationTo: rule.target.relationTo, value: idOf(rule.target.value) }
     const res = await payload.find({
       collection: cfg.entitlementsSlug as never,
-      where: { and: [{ order: { equals: o.orderId } }, { 'target.relationTo': { equals: target.relationTo } }, { 'target.value': { equals: target.value } }] },
+      where: { and: [{ order: { equals: o.orderId } }, { purchasedProduct: { exists: false } }, { 'target.relationTo': { equals: target.relationTo } }, { 'target.value': { equals: target.value } }] },
       limit: 0,
       pagination: false,
       depth: 0,
       overrideAccess: true,
       req: o.req,
     })
-    for (const e of res.docs as unknown as { id: Id; validityStart?: string | null }[]) {
-      const ended = applySubscriptionEnd(
-        { start: e.validityStart ? new Date(e.validityStart) : null, end: null, keepAccessibleAfterExpiry: false, keepUnlockedWhenActive: false },
-        o.endsAt,
-      )
-      await payload.update({ collection: cfg.entitlementsSlug as never, id: e.id, data: { validityEnd: ended.end!.toISOString() } as never, overrideAccess: true, req: o.req })
-    }
+    for (const e of res.docs as unknown as { id: Id; validityStart?: string | null }[]) grants.set(e.id, e)
+  }
+  for (const e of grants.values()) {
+    const ended = applySubscriptionEnd(
+      { start: e.validityStart ? new Date(e.validityStart) : null, end: null, keepAccessibleAfterExpiry: false, keepUnlockedWhenActive: false },
+      o.endsAt,
+    )
+    await payload.update({ collection: cfg.entitlementsSlug as never, id: e.id, data: { validityEnd: ended.end!.toISOString() } as never, overrideAccess: true, req: o.req })
   }
 }
 

@@ -23,6 +23,11 @@ const defaultIsStaff = (user: unknown): boolean => {
   return Boolean(u && (u.role === 'admin' || (Array.isArray(u.roles) && u.roles.includes('admin'))))
 }
 
+const relationId = (value: unknown): string => String(value && typeof value === 'object' ? (value as { id?: unknown }).id ?? '' : value ?? '')
+const purchasedProducts = (value: unknown): string => JSON.stringify(
+  (Array.isArray(value) ? value : []).map((item) => relationId(item?.product)).filter(Boolean).sort(),
+)
+
 function accessConfig(isStaff: (u: unknown) => boolean): AccessConfig {
   const staff = (user: unknown) => Boolean(user && isStaff(user))
   return {
@@ -74,7 +79,18 @@ export const payloadCommerce =
         fields: [...addItemFields(c.fields), ...orderFields, ...(o.orderFields ?? [])],
         hooks: {
           ...c.hooks,
-          beforeChange: [...(c.hooks?.beforeChange ?? []), assignOrderNumber(c.slug), stampPaidAt],
+          beforeChange: [...(c.hooks?.beforeChange ?? []), assignOrderNumber(c.slug), stampPaidAt,
+            ({ data, originalDoc }) => {
+              if (!accessTargets.length || originalDoc?.paymentStatus !== 'paid' || (data.paymentStatus ?? originalDoc.paymentStatus) !== 'paid') return data
+              if ((data.items !== undefined && purchasedProducts(data.items) !== purchasedProducts(originalDoc.items)) ||
+                  (data.customer !== undefined && relationId(data.customer) !== relationId(originalDoc.customer)) ||
+                  (data.customerEmail !== undefined && data.customerEmail !== originalDoc.customerEmail) ||
+                  (data.paidAt !== undefined && data.paidAt !== originalDoc.paidAt)) {
+                throw new APIError('Cannot change the buyer, products or payment date of a paid order with purchased access.', 400)
+              }
+              return data
+            },
+          ],
           afterChange: [
             ...(c.hooks?.afterChange ?? []),
             async ({ doc, req }) => {
@@ -100,7 +116,10 @@ export const payloadCommerce =
           }
 
     const withEntitlementOrder = (c: CollectionConfig): CollectionConfig =>
-      c.slug !== entitlementsSlug ? c : { ...c, fields: [...c.fields, { name: 'order', type: 'relationship', relationTo: 'orders', index: true, admin: { readOnly: true, description: 'The order that granted this access.' } }] }
+      c.slug !== entitlementsSlug ? c : { ...c, fields: [...c.fields,
+        { name: 'order', type: 'relationship', relationTo: 'orders', index: true, admin: { readOnly: true, description: 'The order that granted this access.' } },
+        { name: 'purchasedProduct', type: 'relationship', relationTo: 'products', index: true, admin: { readOnly: true, description: 'The purchased product that granted this access.' } },
+      ] }
 
     const withCommerce: Config = {
       ...incoming,

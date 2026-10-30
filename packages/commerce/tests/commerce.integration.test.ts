@@ -116,9 +116,37 @@ describe('payloadCommerce on a real Payload + Postgres (with payload-access)', (
     expect(new Date(ents[0]!.validityEnd!)).toEqual(d('2026-06-01T00:00:00Z'))
   })
 
+  it('preserves purchased access when product rules change and the paid order is saved again', async () => {
+    const product = await b.payload.create({ collection: 'products', data: {
+      title: 'Original access', priceInEURENABLED: true, priceInEUR: 4900, inventory: 100, _status: 'published',
+      commerce: { billingType: 'one_time', accessItems: [{ target: { relationTo: 'lessons', value: postId }, mode: 'permanent' }] },
+    } as never })
+    const o = await order({ items: [{ product: product.id, quantity: 1 }], paymentStatus: 'paid' })
+    const original = await entitlementsOf(o.id)
+    expect(original).toHaveLength(1)
+    await b.payload.update({ collection: 'products', id: product.id, data: { commerce: { billingType: 'one_time', accessItems: [] } } as never })
+    expect(await entitlementsOf(o.id)).toEqual(original)
+    await b.payload.update({ collection: 'orders', id: o.id, data: { status: 'completed' } as never, overrideAccess: true })
+    expect(await entitlementsOf(o.id)).toEqual(original)
+    const req = await createLocalReq({}, b.payload)
+    await commerceAccessBridge.syncOrderEntitlements(o as never, req, { productsSlug: 'products', usersSlug: 'users', entitlementsSlug: 'entitlements' })
+    expect(await entitlementsOf(o.id)).toEqual(original)
+    await expect(b.payload.update({ collection: 'orders', id: o.id, data: { items: [] } as never, overrideAccess: true })).rejects.toThrow(/paid order/i)
+    await b.payload.update({ collection: 'orders', id: o.id, data: { paymentStatus: 'failed' } as never, overrideAccess: true })
+    expect(await entitlementsOf(o.id)).toHaveLength(0)
+  })
+
   it('imported orders (skipEntitlementSync) leave existing entitlements alone', async () => {
     const o = await order({ items: [{ product: productIds.postForever, quantity: 1 }], paymentStatus: 'paid' }, { skipEntitlementSync: true })
     expect(await entitlementsOf(o.id)).toHaveLength(0)
+  })
+
+  it('fails rather than silently skipping access if a purchased product cannot be loaded', async () => {
+    const req = await createLocalReq({}, b.payload)
+    await expect(commerceAccessBridge.syncOrderEntitlements(
+      { id: 999999, customer: userId, paymentStatus: 'paid', items: [{ product: 999999 }] }, req,
+      { productsSlug: 'products', usersSlug: 'users', entitlementsSlug: 'entitlements' },
+    )).rejects.toThrow()
   })
 
   it('ending a subscription ends the windows its order granted', async () => {
@@ -127,6 +155,19 @@ describe('payloadCommerce on a real Payload + Postgres (with payload-access)', (
     const ents = await entitlementsOf(o.id)
     expect(new Date(ents[0]!.validityEnd!)).toEqual(d('2026-04-15T00:00:00Z'))
     expect(new Date(ents[0]!.validityStart!)).toEqual(d('2026-01-01T00:00:00Z'))
+  })
+
+  it('ends only the subscription grants even if its product rules were removed', async () => {
+    const sub = await b.payload.create({ collection: 'products', data: {
+      title: 'Changing subscription', priceInEURENABLED: true, priceInEUR: 4900, inventory: 100, _status: 'published',
+      commerce: { billingType: 'one_time', accessItems: [{ target: { relationTo: 'courses', value: courseId }, mode: 'permanent' }] },
+    } as never })
+    const o = await order({ items: [{ product: sub.id, quantity: 1 }, { product: productIds.postForever, quantity: 1 }], paymentStatus: 'paid' })
+    await b.payload.update({ collection: 'products', id: sub.id, data: { commerce: { billingType: 'one_time', accessItems: [] } } as never })
+    await endSubscriptionAccess(b.payload, { productsSlug: 'products', usersSlug: 'users', entitlementsSlug: 'entitlements' }, { orderId: o.id, productId: sub.id, endsAt: d('2026-04-15T00:00:00Z') })
+    const ents = await entitlementsOf(o.id)
+    expect(new Date(ents.find((e) => e.target.relationTo === 'courses')!.validityEnd!)).toEqual(d('2026-04-15T00:00:00Z'))
+    expect(ents.find((e) => e.target.relationTo === 'lessons')!.validityEnd).toBeNull()
   })
 
   it('the cart keeps one subscription (the newest) and caps quantity unless the product is multi', async () => {

@@ -12,6 +12,8 @@ import { commerceAccessBridge } from '@daugtcom/payload-commerce/access'
 payloadCommerce({ accessTargets: ['courses', 'lessons'], accessBridge: commerceAccessBridge })
 ```
 
+Paid order entitlements retain their original access windows when a product or order is edited. A paid order's buyer, purchased products and payment date cannot be changed while access integration is enabled. New entitlements record the purchased product so subscription cancellation can end its grants even after the product's access rules change. Existing entitlements without this provenance use their product's current rules for cancellation; review older subscriptions whose rules have been removed. Deployments using database migrations must add the new nullable `purchasedProduct` relationship to the entitlements collection before enabling this version.
+
 The booking plugin extends commerce products, carts, and orders and therefore requires commerce. Its live-call integration is a separate optional bridge.
 
 ## UI (`@daugtcom/payload-commerce/ui`)
